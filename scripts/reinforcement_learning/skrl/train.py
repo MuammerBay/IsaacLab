@@ -1,17 +1,3 @@
-# Copyright (c) 2022-2025, The Isaac Lab Project Developers.
-# All rights reserved.
-#
-# SPDX-License-Identifier: BSD-3-Clause
-
-"""
-Script to train RL agent with skrl.
-
-Visit the skrl documentation (https://skrl.readthedocs.io) to see the examples structured in
-a more user-friendly way.
-"""
-
-"""Launch Isaac Sim Simulator first."""
-
 import argparse
 import sys
 
@@ -104,6 +90,7 @@ from isaaclab_tasks.utils.hydra import hydra_task_config
 algorithm = args_cli.algorithm.lower()
 agent_cfg_entry_point = "skrl_cfg_entry_point" if algorithm in ["ppo"] else f"skrl_{algorithm}_cfg_entry_point"
 
+gym.pprint_registry()
 
 @hydra_task_config(args_cli.task, agent_cfg_entry_point)
 def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agent_cfg: dict):
@@ -159,10 +146,6 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None)
 
-    # convert to single-agent instance if required by the RL algorithm
-    if isinstance(env.unwrapped, DirectMARLEnv) and algorithm in ["ppo"]:
-        env = multi_agent_to_single_agent(env)
-
     # wrap for video recording
     if args_cli.video:
         video_kwargs = {
@@ -174,6 +157,10 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         print("[INFO] Recording videos during training.")
         print_dict(video_kwargs, nesting=4)
         env = gym.wrappers.RecordVideo(env, **video_kwargs)
+
+    # convert to single-agent instance if required by the RL algorithm
+    if isinstance(env.unwrapped, DirectMARLEnv) and algorithm in ["ppo"]:
+        env = multi_agent_to_single_agent(env)
 
     # wrap around environment for skrl
     env = SkrlVecEnvWrapper(env, ml_framework=args_cli.ml_framework)  # same as: `wrap_env(env, wrapper="auto")`
