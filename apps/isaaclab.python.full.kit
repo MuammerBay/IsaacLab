@@ -1,17 +1,17 @@
 ##
-# Adapted from: _isaac_sim/apps/isaacsim.exp.base.kit
+# Custom Isaac Lab Full Experience with ROS2
+# Combines Isaac Lab Python capabilities with full Isaac Sim features
 ##
 
 [package]
-title = "Isaac Lab Python"
-description = "An app for running Isaac Lab"
-version = "2.1.0"
-
-# That makes it browsable in UI with "experience" filter
-keywords = ["experience", "app", "usd"]
+title = "Isaac Lab Full"
+description = "Full Isaac Lab Experience with ROS2 Support"
+version = "4.5.0"
+execFile = "isaac-sim"
+keywords = ["experience", "app", "usd", "isaaclab", "ros2"]
 
 [dependencies]
-# Isaac Sim extensions
+# Base Isaac Sim extensions from isaaclab.python.kit
 "isaacsim.app.about" = {}
 "isaacsim.asset.browser" = {}
 "isaacsim.core.api" = {}
@@ -37,7 +37,7 @@ keywords = ["experience", "app", "usd"]
 "isaacsim.storage.native" = {}
 "isaacsim.util.debug_draw" = {}
 
-# Isaac Sim Extra
+# Isaac Sim Extra from isaaclab.python.kit
 "isaacsim.asset.importer.mjcf" = {}
 "isaacsim.asset.importer.urdf" = {}
 "omni.physx.bundle" = {}
@@ -48,7 +48,51 @@ keywords = ["experience", "app", "usd"]
 "semantics.schema.editor" = {}
 "semantics.schema.property" = {}
 
-# Kit based editor extensions
+# Additional Isaac Sim extensions from your full kit requirements
+"isaacsim.app.setup" = { order = 1000 }
+"isaacsim.asset.gen.omap" = {}
+"isaacsim.asset.gen.omap.ui" = {}
+"isaacsim.asset.importer.heightmap" = {}
+"isaacsim.examples.extension" = {}
+"isaacsim.examples.interactive" = {}
+"isaacsim.gui.components" = {}
+"isaacsim.examples.browser" = {}
+"isaacsim.replicator.behavior.ui" = {}
+"isaacsim.replicator.scene_blox" = {}
+"isaacsim.replicator.synthetic_recorder" = {}
+"isaacsim.robot.manipulators.examples" = {}
+"isaacsim.robot.manipulators.ui" = {}
+"isaacsim.robot.surface_gripper.ui" = {}
+"isaacsim.robot.wheeled_robots.ui" = {}
+"isaacsim.robot_setup.assembler" = {}
+"isaacsim.robot_setup.gain_tuner" = {}
+"isaacsim.robot_setup.grasp_editor" = {}
+"isaacsim.robot_setup.xrdf_editor" = {}
+"isaacsim.sensors.camera.ui" = {}
+"isaacsim.sensors.physics.examples" = {}
+"isaacsim.sensors.physics.ui" = {}
+"isaacsim.sensors.physx.examples" = {}
+"isaacsim.sensors.physx.ui" = {}
+"isaacsim.sensors.rtx.ui" = {}
+"isaacsim.util.camera_inspector" = {}
+"isaacsim.util.merge_mesh" = {}
+"isaacsim.util.physics" = {}
+"omni.isaac.block_world" = {}
+"omni.isaac.extension_templates" = {}
+"omni.isaac.gain_tuner" = {}
+"omni.isaac.grasp_editor" = {}
+"omni.isaac.occupancy_map.ui" = {}
+"omni.isaac.occupancy_map" = {}
+"omni.isaac.physics_inspector" = {}
+"omni.isaac.range_sensor.examples" = {}
+"omni.isaac.range_sensor.ui" = {}
+"omni.isaac.robot_assembler" = {}
+"omni.isaac.robot_description_editor" = {}
+"omni.isaac.scene_blox" = {}
+"omni.isaac.synthetic_recorder" = {}
+"omni.isaac.throttling" = {}
+
+# Kit based editor extensions from isaaclab.python.kit
 "omni.anim.curve.core" = {}
 "omni.graph.action" = {}
 "omni.graph.core" = {}
@@ -98,6 +142,83 @@ keywords = ["experience", "app", "usd"]
 "omni.usd.schema.metrics.assembler" = {}
 "omni.warp.core" = {}
 
+# Additional Kit extensions from your full kit requirements
+"omni.anim.curve.bundle" = {}
+"omni.anim.graph.schema" = {}
+"omni.anim.navigation.recast" = {}
+"omni.anim.shared.core" = {}
+"omni.graph.bundle.action" = {}
+"omni.graph.visualization.nodes" = {}
+"omni.graph.window.action" = {}
+"omni.graph.window.generic" = {}
+"omni.importer.onshape" = {}
+"omni.kit.actions.window" = {}
+"omni.kit.asset_converter" = {}
+"omni.kit.browser.asset" = {}
+"omni.kit.browser.material" = {}
+"omni.kit.collaboration.channel_manager" = {}
+"omni.kit.context_menu" = {}
+"omni.kit.converter.cad" = { order = 200 }
+"omni.kit.graph.delegate.default" = {}
+"omni.kit.hotkeys.window" = {}
+"omni.kit.manipulator.transform" = {}
+"omni.kit.mesh.raycast" = {}
+"omni.kit.preferences.animation" = {}
+"omni.kit.profiler.window" = { order = 2000 }
+"omni.kit.property.collection" = {}
+"omni.kit.property.layer" = {}
+"omni.kit.quicklayout" = {}
+"omni.kit.renderer.capture" = {}
+"omni.kit.renderer.core" = {}
+"omni.kit.scripting" = {}
+"omni.kit.search.files" = {}
+"omni.kit.selection" = {}
+"omni.kit.stage.copypaste" = {}
+"omni.kit.stage.mdl_converter" = {}
+"omni.kit.stage_column.payload" = {}
+"omni.kit.stage_column.variant" = {}
+"omni.kit.stage_templates" = {}
+"omni.kit.thumbnails.usd" = {}
+"omni.kit.tool.asset_exporter" = {}
+"omni.kit.tool.remove_unused.controller" = {}
+"omni.kit.tool.remove_unused.core" = {}
+"omni.kit.uiapp" = {}
+"omni.kit.usda_edit" = {}
+"omni.kit.variant.editor" = {}
+"omni.kit.variant.presenter" = {}
+"omni.kit.viewport.actions" = {}
+"omni.kit.viewport.bundle" = {}
+"omni.kit.viewport.rtx" = {}
+"omni.kit.viewport_widgets_manager" = {}
+"omni.kit.widget.cache_indicator" = {}
+"omni.kit.widget.collection" = {}
+"omni.kit.widget.extended_searchfield" = {}
+"omni.kit.widget.filebrowser" = {}
+"omni.kit.widget.layers" = {}
+"omni.kit.widget.live" = {}
+"omni.kit.widget.timeline" = {}
+"omni.kit.widget.versioning" = {}
+"omni.kit.widgets.custom" = {}
+"omni.kit.window.collection" = {}
+"omni.kit.window.commands" = {}
+"omni.kit.window.cursor" = {}
+"omni.kit.window.extensions" = {}
+"omni.kit.window.file" = {}
+"omni.kit.window.filepicker" = {}
+"omni.kit.window.material" = {}
+"omni.kit.window.material_graph" = {}
+"omni.kit.window.preferences" = {}
+"omni.kit.window.quicksearch" = {}
+"omni.kit.window.script_editor" = {}
+"omni.kit.window.stats" = { order = 1000 }
+"omni.kit.window.title" = {}
+"omni.kit.window.usd_paths" = {}
+"omni.resourcemonitor" = {}
+"omni.simready.explorer" = {}
+"omni.stats" = {}
+"omni.usd.metrics.assembler.physics" = {}
+"omni.usd.schema.scene.visualization" = {}
+
 ########################
 # Isaac Lab Extensions #
 ########################
@@ -130,12 +251,7 @@ omni.replicator.asyncRendering = false # Async rendering must be disabled for SD
 exts."omni.kit.test".includeTests = ["*isaac*"] # Add isaac tests to test runner
 foundation.verifyOsVersion.enabled = false
 
-
-# UNCOMMENTED BELOW!!!! set the default ros bridge to disable on startup
-# isaac.startup.ros_bridge_extension = "isaacsim.ros2.bridge"
-
-[settings]
-# default internal ros2 bridge distro to use if no ros2 distro is sourced
+# ROS2 configuration - default internal ros2 bridge distro to use if no ros2 distro is sourced
 exts."isaacsim.ros2.bridge".ros_distro = "humble"
 
 # set the default ros bridge to enable on startup
@@ -165,12 +281,12 @@ indent_all_ticks = false
 show_menu_titles = true
 
 [settings.app]
-name = "Isaac-Sim"
+name = "Isaac Lab Full"
 version = "4.5.0"
 versionFile = "${exe-path}/VERSION"
 content.emptyStageOnStart = true
 fastShutdown = true
-file.ignoreUnsavedOnExit = true
+file.ignoreUnsavedOnExit = false
 font.file = "${fonts}/OpenSans-SemiBold.ttf"
 font.size = 16
 gatherRenderResults = true # True to prevent artifacts in multiple viewport configurations, can be set to false for better performance in some cases
@@ -187,7 +303,7 @@ asyncRenderingLowLatency = false
 
 [settings.app.window]
 iconPath = "${isaacsim.simulation_app}/data/omni.isaac.sim.png"
-title = "Isaac Sim"
+title = "Isaac Lab Full"
 
 [settings.app.python]
 # These disable the kit app from also printing out python output, which gets confusing
@@ -265,7 +381,7 @@ registries = [
 skipPublishVerification = false
 registryEnabled = true
 
-# Register extension folder from this repo in kit
+# Register extension folder from this repo in kit - INCLUDING Isaac Lab extensions
 [settings.app.exts]
 folders = [
     "${exe-path}/exts",  # kit extensions
@@ -280,6 +396,7 @@ folders = [
     "${exe-path}/../isaacsim/extsPhysics",  # isaac physics extensions for pip
     "${app}", # needed to find other app files
     "${app}/../source", # needed to find extensions in Isaac Lab
+    "${exe-path}/../extsUser",  # additional user extensions
 ]
 
 [settings.physics]
@@ -303,4 +420,4 @@ fabricUpdateJointStates = false
 [settings]
 persistent.isaac.asset_root.default = "http://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5"
 persistent.isaac.asset_root.cloud = "http://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5"
-persistent.isaac.asset_root.nvidia = "http://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5"
+persistent.isaac.asset_root.nvidia = "http://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5" 

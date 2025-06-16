@@ -14,7 +14,12 @@ from isaaclab.app import AppLauncher
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Keyboard teleoperation for Isaac Lab environments.")
 parser.add_argument("--num_envs", type=int, default=1, help="Number of environments to simulate.")
-parser.add_argument("--teleop_device", type=str, default="keyboard", help="Device for interacting with environment")
+parser.add_argument(
+    "--teleop_device", 
+    type=str, 
+    default="keyboard",
+    help="Device for interacting with environment. Options: keyboard, keyboard_so_arm, spacemouse, gamepad, handtracking, handtracking_abs"
+)
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
 parser.add_argument("--sensitivity", type=float, default=1.0, help="Sensitivity factor.")
 parser.add_argument(
@@ -56,6 +61,14 @@ if "handtracking" in args_cli.teleop_device.lower():
 
 from isaaclab.devices import OpenXRDevice, Se3Gamepad, Se3Keyboard, Se3SpaceMouse
 
+# Import custom SO100 keyboard controller
+try:
+    from isaaclab.devices.keyboard.se3_keyboard_so_arm import Se3KeyboardSOArm
+    SO_KEYBOARD_AVAILABLE = True
+except ImportError:
+    SO_KEYBOARD_AVAILABLE = False
+    print("Warning: SO100 keyboard controller not available.")
+
 if args_cli.enable_pinocchio:
     from isaaclab.devices.openxr.retargeters.humanoid.fourier.gr1t2_retargeter import GR1T2Retargeter
     import isaaclab_tasks.manager_based.manipulation.pick_place  # noqa: F401
@@ -68,7 +81,7 @@ from isaaclab_tasks.utils import parse_env_cfg
 
 
 def pre_process_actions(
-    teleop_data: tuple[np.ndarray, bool] | list[tuple[np.ndarray, np.ndarray, np.ndarray]], num_envs: int, device: str
+    teleop_data: tuple[np.ndarray, bool] | list[tuple[np.ndarray, np.ndarray, np.ndarray]] | np.ndarray, num_envs: int, device: str
 ) -> torch.Tensor:
     """Convert teleop data to the format expected by the environment action space.
 
@@ -80,6 +93,18 @@ def pre_process_actions(
     Returns:
         Processed actions as a tensor.
     """
+    # Handle SO100 6D pose commands (direct numpy array)
+    if isinstance(teleop_data, np.ndarray) and teleop_data.shape == (6,):
+        # Direct 6D pose command for SO100 - add dummy gripper
+        actions = torch.tensor(np.concatenate([teleop_data, [0.0]]), dtype=torch.float, device=device).repeat(num_envs, 1)
+        return actions
+    
+    # Handle 7D pose commands (6D pose + gripper)
+    if isinstance(teleop_data, np.ndarray) and teleop_data.shape == (7,):
+        # 7D command: [dx, dy, dz, drx, dry, drz, gripper]
+        actions = torch.tensor(teleop_data, dtype=torch.float, device=device).repeat(num_envs, 1)
+        return actions
+    
     # compute actions based on environment
     if "Reach" in args_cli.task:
         delta_pose, gripper_command = teleop_data
@@ -182,9 +207,25 @@ def main():
 
     # create controller
     if args_cli.teleop_device.lower() == "keyboard":
-        teleop_interface = Se3Keyboard(
+        if "SO_100" in args_cli.task and SO_KEYBOARD_AVAILABLE:
+            # Use SO100-specific keyboard controller (7D output: 6D pose + gripper)
+            teleop_interface = Se3KeyboardSOArm(
+                pos_sensitivity=0.05 * args_cli.sensitivity, rot_sensitivity=0.05 * args_cli.sensitivity
+            )
+            print("🎮 Using SO100 Keyboard Controller (7D: 6D pose + gripper control)")
+        else:
+            # Use standard keyboard controller (6D + gripper)
+            teleop_interface = Se3Keyboard(
+                pos_sensitivity=0.05 * args_cli.sensitivity, rot_sensitivity=0.05 * args_cli.sensitivity
+            )
+    elif args_cli.teleop_device.lower() == "keyboard_so_arm":
+        if not SO_KEYBOARD_AVAILABLE:
+            raise ValueError("SO100 keyboard controller is not available. Please ensure se3_keyboard_so_arm.py is accessible.")
+        # Use SO100-specific keyboard controller (7D output: 6D pose + gripper)
+        teleop_interface = Se3KeyboardSOArm(
             pos_sensitivity=0.05 * args_cli.sensitivity, rot_sensitivity=0.05 * args_cli.sensitivity
         )
+        print("🎮 Using SO100 Keyboard Controller (7D: 6D pose + gripper control)")
     elif args_cli.teleop_device.lower() == "spacemouse":
         teleop_interface = Se3SpaceMouse(
             pos_sensitivity=0.05 * args_cli.sensitivity, rot_sensitivity=0.05 * args_cli.sensitivity
@@ -240,7 +281,7 @@ def main():
         teleoperation_active = False
     else:
         raise ValueError(
-            f"Invalid device interface '{args_cli.teleop_device}'. Supported: 'keyboard', 'spacemouse', 'gamepad',"
+            f"Invalid device interface '{args_cli.teleop_device}'. Supported: 'keyboard', 'keyboard_so_arm', 'spacemouse', 'gamepad',"
             " 'handtracking', 'handtracking_abs'."
         )
 
