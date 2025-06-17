@@ -90,6 +90,23 @@ import omni.ui as ui
 # Additional Isaac Lab imports that can only be imported after the simulator is running
 from isaaclab.devices import OpenXRDevice, Se3Keyboard, Se3SpaceMouse
 
+# Import custom SO100 keyboard controller
+try:
+    from isaaclab.devices.keyboard.se3_keyboard_so_arm import Se3KeyboardSOArm
+    SO_KEYBOARD_AVAILABLE = True
+except ImportError:
+    SO_KEYBOARD_AVAILABLE = False
+    print("Warning: SO100 keyboard controller not available.")
+
+# Import ROS device interface
+try:
+    from isaaclab.devices.ros import Se3RosSOArm
+    ROS_DEVICE_AVAILABLE = True
+    print("🔍 DEBUG: ROS device interface imported successfully")
+except ImportError:
+    ROS_DEVICE_AVAILABLE = False
+    print("Warning: ROS device interface not available. Install rclpy to use ROS control.")
+
 import isaaclab_mimic.envs  # noqa: F401
 from isaaclab_mimic.ui.instruction_display import InstructionDisplay, show_subtask_instructions
 
@@ -140,7 +157,7 @@ class RateLimiter:
 
 
 def pre_process_actions(
-    teleop_data: tuple[np.ndarray, bool] | list[tuple[np.ndarray, np.ndarray, np.ndarray]], num_envs: int, device: str
+    teleop_data: tuple[np.ndarray, bool] | list[tuple[np.ndarray, np.ndarray, np.ndarray]] | np.ndarray, num_envs: int, device: str
 ) -> torch.Tensor:
     """Convert teleop data to the format expected by the environment action space.
 
@@ -152,6 +169,21 @@ def pre_process_actions(
     Returns:
         Processed actions as a tensor.
     """
+    # Handle ROS device or SO100 7D pose commands (direct numpy array from ros_so_arm or keyboard_so_arm)
+    if isinstance(teleop_data, np.ndarray) and teleop_data.shape == (7,):
+        # 7D command: [dx, dy, dz, drx, dry, drz, gripper_vel]
+        print(f"🔍 DEBUG pre_process_actions: Processing 7D ROS/SO100 command: {teleop_data}")
+        actions = torch.tensor(teleop_data, dtype=torch.float, device=device).repeat(num_envs, 1)
+        print(f"🔍 DEBUG pre_process_actions: Created actions tensor shape: {actions.shape}")
+        return actions
+    
+    # Handle SO100 6D pose commands (direct numpy array)
+    if isinstance(teleop_data, np.ndarray) and teleop_data.shape == (6,):
+        # Direct 6D pose command for SO100 - add dummy gripper
+        print(f"🔍 DEBUG pre_process_actions: Processing 6D SO100 command: {teleop_data}")
+        actions = torch.tensor(np.concatenate([teleop_data, [0.0]]), dtype=torch.float, device=device).repeat(num_envs, 1)
+        return actions
+    
     # compute actions based on environment
     if "Reach" in args_cli.task:
         delta_pose, gripper_command = teleop_data
@@ -282,7 +314,9 @@ def main():
         Args:
             device_name: Control device to use. Options include:
                 - "keyboard": Use keyboard keys for simple discrete movements
+                - "keyboard_so_arm": Use SO100-specific keyboard controller (7D: 6D pose + gripper)
                 - "spacemouse": Use 3D mouse for precise 6-DOF control
+                - "ros_so_arm": Use ROS2 topics for SO100 control
                 - "handtracking": Use VR hand tracking for intuitive manipulation
                 - "handtracking_abs": Use VR hand tracking for intuitive manipulation with absolute EE pose
 
@@ -293,6 +327,19 @@ def main():
         nonlocal running_recording_instance
         if device_name == "keyboard":
             return Se3Keyboard(pos_sensitivity=0.2, rot_sensitivity=0.5)
+        elif device_name == "keyboard_so_arm":
+            if not SO_KEYBOARD_AVAILABLE:
+                raise ValueError("SO100 keyboard controller is not available. Please ensure se3_keyboard_so_arm.py is accessible.")
+            # Use SO100-specific keyboard controller (7D output: 6D pose + gripper)
+            return Se3KeyboardSOArm(pos_sensitivity=0.2, rot_sensitivity=0.5)
+        elif device_name == "ros_so_arm":
+            if not ROS_DEVICE_AVAILABLE:
+                raise ValueError("ROS device interface is not available. Please install rclpy to use ROS control.")
+            # Use ROS2 interface for SO100 control
+            print("🔍 DEBUG: Creating ROS device interface...")
+            device = Se3RosSOArm(node_name="isaac_lab_recorder")
+            print("🔍 DEBUG: ROS device interface created successfully")
+            return device
         elif device_name == "spacemouse":
             return Se3SpaceMouse(pos_sensitivity=0.2, rot_sensitivity=0.5)
         elif "dualhandtracking_abs" in device_name and "GR1T2" in env.cfg.env_name:
@@ -341,12 +388,13 @@ def main():
             return device
         else:
             raise ValueError(
-                f"Invalid device interface '{device_name}'. Supported: 'keyboard', 'spacemouse', 'handtracking',"
+                f"Invalid device interface '{device_name}'. Supported: 'keyboard', 'keyboard_so_arm', 'ros_so_arm', 'spacemouse', 'handtracking',"
                 " 'handtracking_abs', 'dualhandtracking_abs'."
             )
 
     teleop_interface = create_teleop_device(args_cli.teleop_device, env)
     teleop_interface.add_callback("R", reset_recording_instance)
+    print("🔍 DEBUG: Teleop interface created and configured:")
     print(teleop_interface)
 
     # reset before starting
@@ -374,11 +422,17 @@ def main():
         while simulation_app.is_running():
             # get data from teleop device
             teleop_data = teleop_interface.advance()
+            
+            # Add debug for non-zero teleop data
+            if isinstance(teleop_data, np.ndarray) and np.any(teleop_data != 0):
+                print(f"🔍 DEBUG main loop: Non-zero teleop data received: {teleop_data}")
 
             # perform action on environment
             if running_recording_instance:
                 # compute actions based on environment
                 actions = pre_process_actions(teleop_data, env.num_envs, env.device)
+                if torch.any(actions != 0):
+                    print(f"🔍 DEBUG main loop: Non-zero actions sent to environment: {actions[0]}")
                 obv = env.step(actions)
                 if subtasks is not None:
                     if subtasks == {}:

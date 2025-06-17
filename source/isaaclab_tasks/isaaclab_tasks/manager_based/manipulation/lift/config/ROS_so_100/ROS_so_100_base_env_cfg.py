@@ -47,7 +47,7 @@ class ObjectTableSceneCfg(InteractiveSceneCfg):
     # Table
     table = AssetBaseCfg(
         prim_path="{ENV_REGEX_NS}/Table",
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.5, 0.0, 0.0), rot=(0.707, 0.0, 0.0, 0.707)),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.3, 0.0, 0.4), rot=(0.707, 0.0, 0.0, 0.707)),
         spawn=UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Mounts/SeattleLabTable/table_instanceable.usd"),
     )
 
@@ -165,6 +165,9 @@ class TerminationsCfg:
         func=mdp.root_height_below_minimum, params={"minimum_height": -0.05, "asset_cfg": SceneEntityCfg("object")}
     )
 
+    # Success termination when cube is lifted above minimal height (8cm above ground)
+    success = DoneTerm(func=mdp.object_lifted_success, params={"minimal_height": 0.08})
+
 
 # @configclass
 class CurriculumCfg:
@@ -234,7 +237,7 @@ class SO100LiftEnvCfg(ManagerBasedRLEnvCfg):
         self.sim.physx.friction_correlation_distance = 0.00625
         
         # Configure camera for closer view during video recording
-        self.viewer.eye = (1.0, 1.0, 0.8)
-        self.viewer.lookat = (0.5, 0.0, 0.2)
+        self.viewer.eye = (0.65, 0.0, 0.65)
+        self.viewer.lookat = (0.0, 0.0, 0.0)
         self.viewer.origin_type = "env"
         self.viewer.env_index = 0

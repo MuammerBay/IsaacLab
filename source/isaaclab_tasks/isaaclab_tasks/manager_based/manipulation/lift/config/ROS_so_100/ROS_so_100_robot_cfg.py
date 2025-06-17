@@ -38,14 +38,15 @@ SO100_CFG = ArticulationCfg(
             solver_velocity_iteration_count=0,
         ),
     ),
-    init_state=ArticulationCfg.InitialStateCfg(# Position of robot base # 90° rotation around X-axis (quaternion: w, x, y, z)
+    init_state=ArticulationCfg.InitialStateCfg(
+        pos=(0.3, 0.0, 0.0),
         joint_pos={
-            "Rotation": 0.1,
-            "Pitch": 0.5,
+            "Rotation": 0.0,
+            "Pitch": 0.0,
             "Elbow": 0.0,
             "Wrist_Pitch": 0.0,
             "Wrist_Roll": 0.0,
-            "Jaw": 0.3,  # Change from 0.5 to 0.3 (middle position) to make movement more apparent
+            "Jaw": 0.3,
         },
         # Set initial joint velocities to zero
         joint_vel={".*": 0.0},

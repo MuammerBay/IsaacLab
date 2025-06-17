@@ -51,3 +51,23 @@ def object_reached_goal(
 
     # rewarded if the object is lifted above the threshold
     return distance < threshold
+
+
+def object_lifted_success(
+    env: ManagerBasedRLEnv,
+    minimal_height: float = 0.08,
+    object_cfg: SceneEntityCfg = SceneEntityCfg("object"),
+) -> torch.Tensor:
+    """Terminate the episode when the object is successfully lifted above minimal height.
+    
+    Args:
+        env: The environment instance.
+        minimal_height: Minimum height above table to consider successful lift.
+        object_cfg: Configuration for the object to check.
+        
+    Returns:
+        Boolean tensor indicating success for each environment.
+    """
+    object: RigidObject = env.scene[object_cfg.name]
+    # Check if object is lifted above the minimal height
+    return object.data.root_pos_w[:, 2] > minimal_height

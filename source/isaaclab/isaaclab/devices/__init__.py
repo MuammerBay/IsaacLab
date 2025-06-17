@@ -11,6 +11,7 @@ Currently, the following categories of devices are supported:
 * **Spacemouse**: 3D mouse with 6 degrees of freedom.
 * **Gamepad**: Gamepad with 2D two joysticks and buttons. Example: Xbox controller.
 * **OpenXR**: Uses hand tracking of index/thumb tip avg to drive the target pose. Gripping is done with pinching.
+* **ROS**: ROS2-based teleoperation devices for receiving commands from ROS topics.
 
 All device interfaces inherit from the :class:`DeviceBase` class, which provides a
 common interface for all devices. The device interface reads the input data when
@@ -25,3 +26,10 @@ from .keyboard import Se2Keyboard, Se3Keyboard
 from .openxr import OpenXRDevice
 from .retargeter_base import RetargeterBase
 from .spacemouse import Se2SpaceMouse, Se3SpaceMouse
+
+# ROS devices (optional, only if ROS2 is available)
+try:
+    from .ros import Se3RosSOArm
+except ImportError:
+    # ROS2 not available, skip import
+    pass
