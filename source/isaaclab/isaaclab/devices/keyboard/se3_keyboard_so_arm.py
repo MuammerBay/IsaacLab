@@ -11,7 +11,7 @@ from collections.abc import Callable
 from scipy.spatial.transform import Rotation
 
 import carb
-import omni
+import omni.appwindow  # Fix import issue
 
 from ..device_base import DeviceBase
 
@@ -19,11 +19,11 @@ from ..device_base import DeviceBase
 class Se3KeyboardSOArm(DeviceBase):
     """A keyboard controller for sending SE(3) commands as delta poses for SO100 arm.
 
-    This class is designed to provide a keyboard controller for a robotic arm with gripper control.
+    This class is designed to provide a keyboard controller for a robotic arm.
     It uses the Omniverse keyboard interface to listen to keyboard events and map them to robot's
     task-space commands.
 
-    The command comprises of a 7D vector of (x, y, z, roll, pitch, yaw, gripper) in meters, radians, and velocity.
+    The command comprises of a 6D vector of (x, y, z, roll, pitch, yaw) in meters and radians.
 
     Key bindings:
         ============================== ================= =================
@@ -35,14 +35,8 @@ class Se3KeyboardSOArm(DeviceBase):
         Rotate along x-axis            Z                 X
         Rotate along y-axis            T                 G
         Rotate along z-axis            C                 V
-        Gripper close (gradual)        F (hold)          
-        Gripper open (gradual)         R (hold)          
         Reset pose                     L
         ============================== ================= =================
-
-    .. note::
-        Gripper control is velocity-based and gradual. Hold F to slowly close, R to slowly open.
-        Release the key to stop gripper movement.
 
     .. seealso::
 
@@ -74,7 +68,6 @@ class Se3KeyboardSOArm(DeviceBase):
         # command buffers
         self._delta_pos = np.zeros(3)  # (x, y, z)
         self._delta_rot = np.zeros(3)  # (roll, pitch, yaw)
-        self._gripper_vel = 0.0  # gradual gripper velocity (-0.3 to 0.3)
         # dictionary for additional callbacks
         self._additional_callbacks = dict()
 
@@ -94,8 +87,6 @@ class Se3KeyboardSOArm(DeviceBase):
         msg += "\tRotate arm along x-axis: Z/X\n"
         msg += "\tRotate arm along y-axis: T/G\n"
         msg += "\tRotate arm along z-axis: C/V\n"
-        msg += "\tGripper close (hold): F\n"
-        msg += "\tGripper open (hold): R\n"
         msg += "\tReset pose: L"
         return msg
 
@@ -107,7 +98,6 @@ class Se3KeyboardSOArm(DeviceBase):
         # default flags
         self._delta_pos = np.zeros(3)  # (x, y, z)
         self._delta_rot = np.zeros(3)  # (roll, pitch, yaw)
-        self._gripper_vel = 0.0  # reset gripper velocity
 
     def add_callback(self, key: str, func: Callable):
         """Add additional functions to bind keyboard.
@@ -122,16 +112,19 @@ class Se3KeyboardSOArm(DeviceBase):
         """
         self._additional_callbacks[key] = func
 
-    def advance(self) -> np.ndarray:
+    def advance(self) -> tuple[np.ndarray, bool]:
         """Provides the result from keyboard event state.
 
         Returns:
-            A 7D numpy array containing the delta pose command (x, y, z, roll, pitch, yaw, gripper).
+            A tuple containing:
+            - 6D numpy array containing the delta pose command (x, y, z, roll, pitch, yaw)
+            - Boolean flag (unused but expected by the interface)
         """
         # convert to rotation vector
         rot_vec = Rotation.from_euler("XYZ", self._delta_rot).as_rotvec()
-        # return 7D command: 6D pose + gripper velocity
-        return np.concatenate([self._delta_pos, rot_vec, [self._gripper_vel]])
+        # return 6D command: position + orientation deltas
+        delta_pose = np.concatenate([self._delta_pos, rot_vec])
+        return delta_pose, False
 
     """
     Internal helpers.
@@ -151,18 +144,12 @@ class Se3KeyboardSOArm(DeviceBase):
                 self._delta_pos += self._INPUT_KEY_MAPPING[event.input.name]
             elif event.input.name in ["Z", "X", "T", "G", "C", "V"]:
                 self._delta_rot += self._INPUT_KEY_MAPPING[event.input.name]
-            elif event.input.name == "F":
-                self._gripper_vel = 0.3  # gentle close velocity
-            elif event.input.name == "R":
-                self._gripper_vel = -0.3  # gentle open velocity
         # remove the command when un-pressed
         if event.type == carb.input.KeyboardEventType.KEY_RELEASE:
             if event.input.name in ["W", "S", "A", "D", "Q", "E"]:
                 self._delta_pos -= self._INPUT_KEY_MAPPING[event.input.name]
             elif event.input.name in ["Z", "X", "T", "G", "C", "V"]:
                 self._delta_rot -= self._INPUT_KEY_MAPPING[event.input.name]
-            elif event.input.name in ["F", "R"]:
-                self._gripper_vel = 0.0  # stop gripper when key released
         # additional callbacks
         if event.type == carb.input.KeyboardEventType.KEY_PRESS:
             if event.input.name in self._additional_callbacks:
